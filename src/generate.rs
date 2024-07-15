@@ -32,6 +32,11 @@ impl<'algo> super::BagIt<'_, 'algo> {
         }
     }
 
+    /// Compute checksum, copy to bag directory, add to list of items in the bag.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - File to add to the bag, it will be copied in the path returned by [`Self::path()`]`/data`.
     pub async fn add_file<ChecksumAlgo: Digest>(
         &mut self,
         file: impl AsRef<Path>,

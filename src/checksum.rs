@@ -1,4 +1,5 @@
-pub use compute::{compute_checksum_file, ChecksumComputeError};
+pub(crate) use compute::compute_checksum_file;
+pub use compute::ChecksumComputeError;
 use digest::Digest;
 use std::{borrow::Cow, fmt::Display};
 
@@ -24,7 +25,7 @@ mod compute {
         ComputeChecksum,
     }
 
-    pub async fn compute_checksum_file<ChecksumAlgo: Digest>(
+    pub(crate) async fn compute_checksum_file<ChecksumAlgo: Digest>(
         path: impl AsRef<Path>,
     ) -> Result<Checksum<'static>, ChecksumComputeError> {
         if !path.as_ref().is_file() {
@@ -56,6 +57,7 @@ mod compute {
 pub struct Checksum<'a>(Cow<'a, str>);
 
 impl Checksum<'_> {
+    /// Compute checksum for vector of bytes
     pub fn digest<Algorithm: Digest>(bytes: Vec<u8>) -> Self {
         Algorithm::digest(bytes).to_vec().into()
     }

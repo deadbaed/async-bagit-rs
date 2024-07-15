@@ -21,6 +21,7 @@ pub enum PayloadError {
 }
 
 #[derive(Debug, PartialEq)]
+/// A payload is a file inside a bag
 pub struct Payload<'a> {
     checksum: Checksum<'a>,
 

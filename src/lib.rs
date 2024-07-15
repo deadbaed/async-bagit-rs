@@ -16,7 +16,7 @@ pub mod error {
 }
 
 pub use algorithm::{Algorithm, ChecksumAlgorithm};
-pub use checksum::{compute_checksum_file, Checksum};
+pub use checksum::Checksum;
 pub use payload::Payload;
 
 #[derive(Debug, PartialEq)]
@@ -38,7 +38,6 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         items: Vec<Payload<'a>>,
         checksum_algorithm: &'algo Algorithm,
     ) -> Result<Self, error::ReadError> {
-
         Ok(Self {
             path: directory.as_ref().to_path_buf(),
             items,
@@ -46,6 +45,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         })
     }
 
+    /// Path to the folder containing the bag
     pub fn path(&self) -> &std::path::Path {
         &self.path
     }
