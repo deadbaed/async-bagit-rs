@@ -2,6 +2,10 @@
 name = "bagit"
 version = "0.1.0"
 edition = "2021"
+license = "MIT OR Apache-2.0"
+keywords = ["bagit", "bag-it", "bag", "bags", "rfc-8493"]
+description = "Handle BagIt bags"
+repository = "https://github.com/deadbaed/bagit-rs"
 
 [features]
 default = ["generate"]
