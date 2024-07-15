@@ -3,7 +3,8 @@ use std::fmt::Display;
 
 #[derive(Debug, PartialEq)]
 /// List of common hashing algorithms
-/// Taken from https://www.iana.org/assignments/named-information/named-information.xhtml
+///
+/// Taken from <https://www.iana.org/assignments/named-information/named-information.xhtml>
 pub enum Algorithm {
     Sha256,
     Sha512,

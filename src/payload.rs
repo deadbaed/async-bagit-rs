@@ -35,10 +35,10 @@ impl Display for Payload<'_> {
 }
 
 impl<'a> Payload<'a> {
-    pub fn new(relative_path: impl AsRef<Path>, checksum: Checksum<'a>) -> Self {
+    pub(crate) fn new(relative_path_file: impl AsRef<Path>, checksum: Checksum<'a>) -> Self {
         Self {
             checksum,
-            file: relative_path.as_ref().to_path_buf(),
+            file: relative_path_file.as_ref().to_path_buf(),
         }
     }
 

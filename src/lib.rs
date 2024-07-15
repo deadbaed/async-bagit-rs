@@ -7,12 +7,17 @@ mod generate;
 mod payload;
 mod read;
 
+pub mod error {
+    pub use crate::checksum::ChecksumComputeError;
+    #[cfg(feature = "generate")]
+    pub use crate::generate::GenerateError;
+    pub use crate::payload::PayloadError;
+    pub use crate::read::ReadError;
+}
+
 pub use algorithm::{Algorithm, ChecksumAlgorithm};
-pub use checksum::{compute_checksum_file, Checksum, ChecksumComputeError};
-#[cfg(feature = "generate")]
-pub use generate::GenerateError;
-pub use payload::{Payload, PayloadError};
-pub use read::ReadError;
+pub use checksum::{compute_checksum_file, Checksum};
+pub use payload::Payload;
 
 #[derive(Debug, PartialEq)]
 pub struct BagIt<'a, 'algo> {
@@ -32,7 +37,8 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         directory: impl AsRef<std::path::Path>,
         items: Vec<Payload<'a>>,
         checksum_algorithm: &'algo Algorithm,
-    ) -> Result<Self, ReadError> {
+    ) -> Result<Self, error::ReadError> {
+
         Ok(Self {
             path: directory.as_ref().to_path_buf(),
             items,

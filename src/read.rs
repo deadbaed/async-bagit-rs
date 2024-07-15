@@ -23,7 +23,7 @@ pub enum ReadError {
     #[error("Failed to read a line in checksum file")]
     ReadChecksumLine(std::io::ErrorKind),
     #[error("Failed to process a line in checksum file: {0}")]
-    ProcessManifestLine(#[from] crate::PayloadError),
+    ProcessManifestLine(#[from] crate::error::PayloadError),
 }
 
 impl<'a, 'algo> BagIt<'a, 'algo> {
@@ -126,7 +126,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
 #[cfg(test)]
 mod test {
 
-    use crate::{Algorithm, BagIt, Checksum, ChecksumAlgorithm, Payload, ReadError};
+    use crate::{Algorithm, BagIt, Checksum, ChecksumAlgorithm, Payload, error::ReadError};
     use md5::Md5;
     use sha2::Sha256;
     use std::path::Path;
