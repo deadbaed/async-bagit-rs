@@ -50,7 +50,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         &self.path
     }
 
-    pub fn items(&self) -> impl Iterator<Item = &Payload> {
+    pub fn payload_items(&self) -> impl Iterator<Item = &Payload> {
         self.items.iter()
     }
 }

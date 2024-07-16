@@ -1,6 +1,5 @@
 use crate::{
-    checksum::{compute_checksum_file, ChecksumComputeError},
-    Checksum,
+    checksum::{compute_checksum_file, ChecksumComputeError}, BagIt, Checksum
 };
 use digest::Digest;
 use std::{
@@ -26,12 +25,12 @@ pub struct Payload<'a> {
     checksum: Checksum<'a>,
 
     /// Path relative to the bag directory
-    file: std::path::PathBuf,
+    relative_path: std::path::PathBuf,
 }
 
 impl Display for Payload<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {}", self.checksum, self.file.display())
+        write!(f, "{} {}", self.checksum, self.relative_path.display())
     }
 }
 
@@ -39,7 +38,7 @@ impl<'a> Payload<'a> {
     pub(crate) fn new(relative_path_file: impl AsRef<Path>, checksum: Checksum<'a>) -> Self {
         Self {
             checksum,
-            file: relative_path_file.as_ref().to_path_buf(),
+            relative_path: relative_path_file.as_ref().to_path_buf(),
         }
     }
 
@@ -66,8 +65,22 @@ impl<'a> Payload<'a> {
 
         Ok(Self {
             checksum,
-            file: PathBuf::from(relative_file_path),
+            relative_path: PathBuf::from(relative_file_path),
         })
+    }
+
+    pub fn checksum(&self) -> &Checksum {
+        &self.checksum
+    }
+
+    /// Path of payload relative to bag directory
+    pub fn relative_path(&self) -> &Path {
+        &self.relative_path
+    }
+
+    /// Absolute path of payload
+    pub fn absolute_path(&self, bag: &BagIt) -> PathBuf {
+        bag.path().join(&self.relative_path)
     }
 }
 
