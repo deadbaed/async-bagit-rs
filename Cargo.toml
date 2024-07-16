@@ -3,7 +3,7 @@ name = "bagit"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-keywords = ["bagit", "bag-it", "bag", "bags", "rfc-8493"]
+keywords = ["bag-it", "bags", "rfc-8493", "async", "tokio"]
 description = "Handle BagIt bags"
 repository = "https://github.com/deadbaed/bagit-rs"
 
@@ -18,7 +18,12 @@ digest = "0.10"
 hex = "0.4"
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 sha2 = "0.10"
 md-5 = "0.10"
 tempfile = "3"
+blake3 = { version = "1", features = ["traits-preview"] }
+
+[[example]]
+name = "blake3_generate"
+required-features = ["generate"]
