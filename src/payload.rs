@@ -1,5 +1,6 @@
 use crate::{
-    checksum::{compute_checksum_file, ChecksumComputeError}, BagIt, Checksum
+    checksum::{compute_checksum_file, ChecksumComputeError},
+    BagIt, Checksum,
 };
 use digest::Digest;
 use std::{
@@ -83,4 +84,3 @@ impl<'a> Payload<'a> {
         bag.path().join(&self.relative_path)
     }
 }
-
