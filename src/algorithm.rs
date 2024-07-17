@@ -1,7 +1,7 @@
 use digest::Digest;
 use std::fmt::Display;
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// List of common hashing algorithms
 ///
 /// Taken from <https://www.iana.org/assignments/named-information/named-information.xhtml>
@@ -14,6 +14,8 @@ pub enum Algorithm {
 }
 
 impl Algorithm {
+    /// Returns name of the algorithm, used in the filenames of the manifests files with checksums
+    /// of said algorithm name
     pub fn name(&self) -> &str {
         match self {
             Algorithm::Sha256 => "sha256",
@@ -38,6 +40,15 @@ pub struct ChecksumAlgorithm<ChecksumAlgo: Digest> {
 }
 
 impl<ChecksumAlgo: Digest> ChecksumAlgorithm<ChecksumAlgo> {
+    /// Link an algorithm enum variant with the type computing digests
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use async_bagit::{Algorithm, ChecksumAlgorithm};
+    /// let algorithm = ChecksumAlgorithm::<sha2::Sha256>::new(Algorithm::Sha256);
+    /// ```
+    ///
     pub fn new(algorithm: Algorithm) -> Self {
         Self {
             inner: algorithm,
@@ -45,10 +56,12 @@ impl<ChecksumAlgo: Digest> ChecksumAlgorithm<ChecksumAlgo> {
         }
     }
 
+    /// Shortcut to get name of the Algorithm. See [Algorithm::name()]
     pub fn name(&self) -> &str {
         self.inner.name()
     }
 
+    /// Get a reference on the [Algorithm] enum.
     pub fn algorithm(&self) -> &Algorithm {
         &self.inner
     }

@@ -5,28 +5,54 @@ use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
 
 #[derive(thiserror::Error, Debug, PartialEq)]
+/// Possible errors when reading a bagit container
 pub enum ReadError {
+    /// Specified path is not a directory
     #[error("Path is not a directory")]
     NotDirectory,
-    #[error("There is no parent directory for this bag")]
-    NoParent,
+    /// Required metadata file is not present
     #[error("Missing `bagit.txt` file")]
     MissingBagItTxt,
+    /// Failed to gather list of potential checksum files
     #[error("Listing checksum files")]
     ListChecksumFiles(std::io::ErrorKind),
+    /// At least a checksum file is required for bag it be complete
     #[error("Missing at least a checksum file")]
     MissingChecksumFiles,
+    /// The algorithm asked is not present in the bag
     #[error("Requested algorithm is missing")]
     NotRequestedAlgorithm,
+    /// Failed to open file containing checksums
     #[error("Failed to open checksum file")]
     OpenChecksumFile(std::io::ErrorKind),
+    /// Failed to read one line containing checksum
     #[error("Failed to read a line in checksum file")]
     ReadChecksumLine(std::io::ErrorKind),
+    /// Could not process checksum of a payload
     #[error("Failed to process a line in checksum file: {0}")]
     ProcessManifestLine(#[from] crate::error::PayloadError),
 }
 
 impl<'a, 'algo> BagIt<'a, 'algo> {
+    /// Read and validate a bagit container
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// // Specify the algorithm to verify payloads
+    /// let algorithm = ChecksumAlgorithm::<sha2::Sha256>::new(Algorithm::Sha256);
+    ///
+    /// # let mut bagit_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    /// # bagit_directory.push("tests/sample-bag/");
+    /// // Read what's in the bag
+    /// let bag_it = BagIt::read_existing(bagit_directory, &algorithm).await?;
+    /// assert_eq!(bag_it.payload_items().count(), 5);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn read_existing<ChecksumAlgo: Digest + 'algo>(
         bag_it_directory: impl AsRef<Path>,
         checksum_algorithm: &'algo ChecksumAlgorithm<ChecksumAlgo>,
@@ -126,7 +152,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
 #[cfg(test)]
 mod test {
 
-    use crate::{Algorithm, BagIt, Checksum, ChecksumAlgorithm, Payload, error::ReadError};
+    use crate::{error::ReadError, Algorithm, BagIt, Checksum, ChecksumAlgorithm, Payload};
     use md5::Md5;
     use sha2::Sha256;
     use std::path::Path;

@@ -33,7 +33,7 @@ pub struct BagIt<'a, 'algo> {
 
 impl<'a, 'algo> BagIt<'a, 'algo> {
     #[cfg(test)]
-    pub fn from_existing_items(
+    pub(crate) fn from_existing_items(
         directory: impl AsRef<std::path::Path>,
         items: Vec<Payload<'a>>,
         checksum_algorithm: &'algo Algorithm,
@@ -50,6 +50,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         &self.path
     }
 
+    /// Iterator over all the items inside the bag
     pub fn payload_items(&self) -> impl Iterator<Item = &Payload> {
         self.items.iter()
     }

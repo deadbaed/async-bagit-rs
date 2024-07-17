@@ -14,13 +14,18 @@ mod compute {
     };
 
     #[derive(thiserror::Error, Debug, PartialEq)]
+    /// Possible errors when computing checksums for bagit payloads
     pub enum ChecksumComputeError {
+        /// File was not found
         #[error("File not found on disk")]
         FileNotFound,
+        /// Failed to open file
         #[error("Failed to open file")]
         OpenFile(std::io::ErrorKind),
+        /// Failed to read file
         #[error("Failed to read file")]
         ReadFile(std::io::ErrorKind),
+        /// Failed to compute checksum
         #[error("Failed to compute checksum of file")]
         ComputeChecksum,
     }
@@ -54,10 +59,23 @@ mod compute {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// Integrity checksum for a payload of a BagIt container.
+///
+/// Every payload in a BagIt container must have a checksum, you can compute one with [Checksum::digest()]
 pub struct Checksum<'a>(Cow<'a, str>);
 
 impl Checksum<'_> {
-    /// Compute checksum for vector of bytes
+    /// Compute checksum for bytes, encoded as a lowercase hex string
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use async_bagit::Checksum;
+    /// assert_eq!(
+    ///      Checksum::digest::<sha2::Sha256>("i love my bag, it is awesome".into()),
+    ///     Checksum::from("9d5e40310ff9851f519fe3f84770e7c4ef9d840d26d040804db4a1fd0a9d4038")
+    /// );
+    ///
     pub fn digest<Algorithm: Digest>(bytes: Vec<u8>) -> Self {
         Algorithm::digest(bytes).to_vec().into()
     }

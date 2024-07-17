@@ -13,3 +13,9 @@ jobs:
       - run: cargo build --examples --all-features
       - run: cargo test --all-features
 
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo clippy --all-targets --all-features
