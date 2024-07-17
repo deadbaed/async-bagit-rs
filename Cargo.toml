@@ -1,11 +1,11 @@
 [package]
-name = "bagit"
+name = "async_bagit"
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 keywords = ["bag-it", "bags", "rfc-8493", "async", "tokio"]
 description = "Handle BagIt bags"
-repository = "https://github.com/deadbaed/bagit-rs"
+repository = "https://github.com/deadbaed/async-bagit-rs"
 
 [features]
 default = ["generate"]

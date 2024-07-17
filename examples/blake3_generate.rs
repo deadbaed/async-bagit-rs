@@ -4,7 +4,7 @@
 //! $ cargo run --example blake3_generate --features="generate" -- /tmp/mybag
 //! ```
 
-use bagit::{Algorithm, BagIt, ChecksumAlgorithm};
+use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
 
 type Blake3 = blake3::Hasher;
 

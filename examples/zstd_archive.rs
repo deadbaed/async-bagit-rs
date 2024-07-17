@@ -4,12 +4,12 @@
 //! $ cargo run --example zstd_archive -- ./tests/sample-bag.tar.zst
 //! ```
 
+use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
 use async_compression::tokio::bufread::ZstdDecoder;
-use bagit::{Algorithm, BagIt, ChecksumAlgorithm};
 use sha2::Sha256;
 use tokio::{
     fs::File,
-    io::{AsyncBufReadExt, AsyncReadExt, BufReader},
+    io::{AsyncBufReadExt, BufReader},
 };
 use tokio_tar::Archive;
 
@@ -52,7 +52,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             payload.checksum()
         );
     }
-
 
     // Find payload whose filename is "bagit.md"
     println!("Finding file `bagit.md` and showing its first 5 lines\n===============");

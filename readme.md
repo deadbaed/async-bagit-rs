@@ -1,11 +1,11 @@
-# bagit
+# async_bagit
 
 Rust library to create and read [BagIt](https://en.wikipedia.org/wiki/BagIt) containers.
 
 ## Requirements to use in your crate
 
+- Tokio runtime
 - Nightly Rust, until [feature `iter_next_chunk`](https://github.com/rust-lang/rust/issues/98326) is stabilized, sorry. Feel free to propose a patch to have something working on stable in the mean time!
-- Async environment with tokio
 
 ## Notes when using the crate
 
@@ -46,4 +46,4 @@ My usage of BagIt will be creating bags with this crate, and opening them with t
 
 ## Acknowledgments
 
-If you are looking for another Rust implementation of BagIt https://github.com/pwinckles/bagr is a nice one!
+If you are looking for a sync Rust implementation of BagIt https://github.com/pwinckles/bagr is a nice one!
