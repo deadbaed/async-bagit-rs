@@ -157,7 +157,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
     ///     .payload_items()
     ///     .map(|payload| payload.absolute_path(&bag))
     ///     .collect();
-    /// 
+    ///
     /// // Find a payload by its filename
     /// let my_totebag = bag
     ///     .payload_items()
@@ -169,7 +169,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
     ///             == Some("totebag.jpg")
     ///     });
     /// assert!(my_totebag.is_some());
-    /// 
+    ///
     /// // Get unique number of file extensions in the bag
     /// let number_file_extensions = bag
     ///     .payload_items()
