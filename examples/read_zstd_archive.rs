@@ -1,7 +1,7 @@
 //! Run this example with the following command in a terminal:
 //!
 //! ```console
-//! $ cargo run --example zstd_archive -- ./tests/sample-bag.tar.zst
+//! $ cargo run --example read_zstd_archive -- ./tests/sample-bag.tar.zst
 //! ```
 
 use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
@@ -65,7 +65,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 == Some("bagit.md")
         })
         .ok_or(Box::<dyn std::error::Error>::from(
-            "failed to find payload `bagit.md` file in bag",
+            "failed to find payload named `bagit.md` in bag",
         ))?;
 
     // Read the first 5 lines of file, and display them

@@ -31,7 +31,7 @@ name = "blake3_generate"
 required-features = ["generate"]
 
 [[example]]
-name = "zstd_archive"
+name = "read_zstd_archive"
 
 [package.metadata.docs.rs]
 all-features = true
