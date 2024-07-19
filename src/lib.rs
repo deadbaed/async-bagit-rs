@@ -1,4 +1,7 @@
 #![feature(iter_next_chunk)]
+#![warn(missing_docs)]
+#![cfg_attr(docsrs, feature(doc_cfg))] // https://stackoverflow.com/a/61417700/4809297
+
 
 mod algorithm;
 mod checksum;

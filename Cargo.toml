@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 keywords = ["bag-it", "bags", "rfc-8493", "async", "tokio"]
-description = "Handle BagIt bags"
+description = "Create and load BagIt containers"
 repository = "https://github.com/deadbaed/async-bagit-rs"
 
 [features]
@@ -32,3 +32,8 @@ required-features = ["generate"]
 
 [[example]]
 name = "zstd_archive"
+
+[package.metadata.docs.rs]
+all-features = true
+# enable unstable features in the documentation https://stackoverflow.com/a/61417700/4809297
+rustdoc-args = ["--cfg", "docsrs"]
