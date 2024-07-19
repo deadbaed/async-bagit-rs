@@ -61,7 +61,7 @@ mod compute {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 /// Integrity checksum for a payload of a BagIt container.
 ///
-/// Every payload in a BagIt container must have a checksum, you can compute one with [Checksum::digest()]
+/// Every payload in a BagIt container must have a checksum, you can compute one with [`Checksum::digest()`].
 pub struct Checksum<'a>(Cow<'a, str>);
 
 impl Checksum<'_> {

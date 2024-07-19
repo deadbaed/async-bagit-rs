@@ -1,3 +1,4 @@
+use crate::error::PayloadError;
 use crate::{BagIt, ChecksumAlgorithm, Payload};
 use digest::Digest;
 use std::path::Path;
@@ -28,9 +29,9 @@ pub enum ReadError {
     /// Failed to read one line containing checksum
     #[error("Failed to read a line in checksum file")]
     ReadChecksumLine(std::io::ErrorKind),
-    /// Could not process checksum of a payload
+    /// See [`PayloadError`]
     #[error("Failed to process a line in checksum file: {0}")]
-    ProcessManifestLine(#[from] crate::error::PayloadError),
+    ProcessManifestLine(#[from] PayloadError),
 }
 
 impl<'a, 'algo> BagIt<'a, 'algo> {
@@ -48,7 +49,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
     /// # let mut bagit_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     /// # bagit_directory.push("tests/sample-bag/");
     /// // Read what's in the bag
-    /// let bag_it = BagIt::read_existing(bagit_directory, &algorithm).await?;
+    /// let bag_it = BagIt::read_existing(bagit_directory, &algorithm).await.unwrap();
     /// assert_eq!(bag_it.payload_items().count(), 5);
     /// # Ok(())
     /// # }

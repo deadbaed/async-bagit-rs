@@ -7,20 +7,32 @@ use std::path::Path;
 use tokio::fs;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
+/// Possible errors when creating bagit containers
 pub enum GenerateError {
+    /// See [`ChecksumComputeError`]
     #[error("Failed to compute checksum: {0}")]
     ComputeChecksum(#[from] ChecksumComputeError),
+    /// This should not be possible, but file does not have a name
     #[error("File has no name! This should not be possible")]
     FileHasNoName,
+    /// Failed to create directory on filesystem
     #[error("Failed to create payload directory")]
     OpenChecksumFile(std::io::ErrorKind),
+    /// Failed to read file and/or create file on filesystem
     #[error("Failed to copy file to payload directory")]
     CopyToPayloadFolder(std::io::ErrorKind),
+    /// Failed to compute relative path of newly copied payload
     #[error("Failed to get relative path of file inside bag: {0}")]
     StripPrefixPath(#[from] std::path::StripPrefixError),
 }
 
 impl<'algo> super::BagIt<'_, 'algo> {
+    /// Create an empty bag
+    ///
+    /// # Arguments
+    ///
+    /// * `directory` - Path where the bag will reside
+    /// * `checksum_algorithm` - Algorithm used when generating manifest file
     pub fn new_empty<ChecksumAlgo: Digest>(
         directory: impl AsRef<Path>,
         checksum_algorithm: &'algo ChecksumAlgorithm<ChecksumAlgo>,
@@ -32,7 +44,7 @@ impl<'algo> super::BagIt<'_, 'algo> {
         }
     }
 
-    /// Compute checksum, copy to bag directory, add to list of items in the bag.
+    /// Compute checksum of specified `file`, copy it to bag directory, add to list of items inside the bag.
     ///
     /// # Arguments
     ///
@@ -69,6 +81,10 @@ impl<'algo> super::BagIt<'_, 'algo> {
         Ok(())
     }
 
+    /// Procedure to make a bagit container ready for distribution
+    ///
+    /// - Write manifest file with payloads and their checksums
+    /// - Bagit file declaration
     pub async fn finalize(&self) -> Result<(), std::io::Error> {
         self.write_manifest_file().await?;
         self.write_bagit_file().await?;

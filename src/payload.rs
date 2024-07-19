@@ -9,19 +9,24 @@ use std::{
 };
 
 #[derive(thiserror::Error, Debug, PartialEq)]
+/// Possible errors when manipulating bagit payloads
 pub enum PayloadError {
+    /// Each line of manifest must be: "\<payload checksum\> \<relative path of payload\>"
     #[error("Invalid line format")]
     InvalidLine,
+    /// Path of payload must be relative to container's path
     #[error("Item is not inside bag")]
     NotInsideBag,
+    /// See [`ChecksumComputeError`]
     #[error("Failed to compute checksum: {0}")]
     ComputeChecksum(#[from] ChecksumComputeError),
+    /// Checksum is not the same after computing it and comparing with the one provided in the bag
     #[error("Provided checksum differs from file on disk")]
     ChecksumDiffers,
 }
 
 #[derive(Debug, PartialEq)]
-/// A payload is a file inside a bag
+/// File inside a bagit container
 pub struct Payload<'a> {
     checksum: Checksum<'a>,
 
@@ -70,6 +75,11 @@ impl<'a> Payload<'a> {
         })
     }
 
+    /// A checksum of the payload.
+    ///
+    /// The algorithm used is not specified, refer to either:
+    /// - the moment when the payload was added
+    /// - when the bag was opened.
     pub fn checksum(&self) -> &Checksum {
         &self.checksum
     }

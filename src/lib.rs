@@ -10,6 +10,7 @@ mod generate;
 mod payload;
 mod read;
 
+/// Possible errors when manipulating BagIt containers
 pub mod error {
     pub use crate::checksum::ChecksumComputeError;
     #[cfg(feature = "generate")]
@@ -23,6 +24,10 @@ pub use checksum::Checksum;
 pub use payload::Payload;
 
 #[derive(Debug, PartialEq)]
+/// BagIt container: A set of opaque files contained within the structure defined by RFC 8493 <https://datatracker.ietf.org/doc/html/rfc8493>
+///
+/// This struct represents valid and complete bags opened with [`BagIt::read_existing()`],
+/// or incomplete bags in the process of adding files (see [`BagIt::new_empty()`], [`BagIt::add_file()`]).
 pub struct BagIt<'a, 'algo> {
     /// Location of the bag
     path: std::path::PathBuf,
@@ -53,7 +58,49 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         &self.path
     }
 
-    /// Iterator over all the items inside the bag
+    /// Iterator over payloads inside the bag
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// # let algorithm = ChecksumAlgorithm::<sha2::Sha256>::new(Algorithm::Sha256);
+    /// # let mut bagit_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    /// # bagit_directory.push("tests/sample-bag");
+    /// // Start by getting a valid bag
+    /// let bag = BagIt::read_existing(bagit_directory, &algorithm).await.unwrap();
+    ///
+    /// // Get the absolute paths of all payloads in this bag
+    /// let absolute_paths: Vec<std::path::PathBuf> = bag
+    ///     .payload_items()
+    ///     .map(|payload| payload.absolute_path(&bag))
+    ///     .collect();
+    /// 
+    /// // Find a payload by its filename
+    /// let my_totebag = bag
+    ///     .payload_items()
+    ///     .find(|payload| {
+    ///         payload
+    ///             .relative_path()
+    ///             .file_name()
+    ///             .and_then(|file_name| file_name.to_str())
+    ///             == Some("totebag.jpg")
+    ///     });
+    /// assert!(my_totebag.is_some());
+    /// 
+    /// // Get unique number of file extensions in the bag
+    /// let number_file_extensions = bag
+    ///     .payload_items()
+    ///     .filter_map(|item| item.relative_path().extension())
+    ///     .collect::<std::collections::HashSet<_>>()
+    ///     .len();
+    /// # assert_eq!(number_file_extensions, 4);
+    ///
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn payload_items(&self) -> impl Iterator<Item = &Payload> {
         self.items.iter()
     }
