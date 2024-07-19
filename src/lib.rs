@@ -2,6 +2,84 @@
 #![warn(missing_docs)]
 #![cfg_attr(docsrs, feature(doc_cfg))] // https://stackoverflow.com/a/61417700/4809297
 
+/*!
+
+# BagIt
+
+Here are some resources to get started with BagIt containers:
+
+- The [Wikipedia article](https://en.wikipedia.org/wiki/BagIt) to get started with the format or to get a brief explanation
+- The Library of Congress of the United States made [a YouTube video](https://www.youtube.com/watch?v=l3p3ao_JSfo) (in 2009) to explain what is BagIt
+- The spec of the container format: [RFC 8493](https://datatracker.ietf.org/doc/html/rfc8493)
+
+For the integrity part of BagIt, any type implementing the `Digest` trait from the [`digest`](https://docs.rs/digest) crate can be used to compute hashes.
+
+## Load existing bag
+
+```no_run
+use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
+
+# #[tokio::main]
+# async fn main() -> Result<(), Box<dyn std::error::Error>> {
+// Specify the algorithm to use for checksums
+type AlgorithmToUse = blake3::Hasher;
+let algorithm = ChecksumAlgorithm::<AlgorithmToUse>::new(Algorithm::Custom("blake3"));
+
+// Where is the bag on the filesystem?
+let bag_directory = "/somewhere/where/the/bag/will/be/placed";
+
+// Parse bagit metadata and verify checksums of payloads.
+let bag = BagIt::read_existing(bag_directory, &algorithm).await.unwrap();
+
+// This bag is complete and valid! You can get use files knowing their data is safe to use.
+
+# Ok(())
+# }
+```
+
+For more examples of what you can do with payload files once the bag has been validated, please see [`BagIt::payload_items()`].
+
+## Create new bag and add files
+
+```no_run
+use async_bagit::{Algorithm, BagIt, ChecksumAlgorithm};
+
+# #[tokio::main]
+# async fn main() -> Result<(), Box<dyn std::error::Error>> {
+// Specify the algorithm to use for checksums
+type AlgorithmToUse = blake3::Hasher;
+let algorithm = ChecksumAlgorithm::<AlgorithmToUse>::new(Algorithm::Custom("blake3"));
+
+// Where the payloads and bag metadata will be placed
+let bag_directory = "/somewhere/where/the/bag/will/be/placed";
+
+// Create bag
+let mut bag = BagIt::new_empty(bag_directory, &algorithm);
+
+// Add files inside bag
+for file in [
+    "handbag.jpg",
+    "important.pdf",
+    "hit_song.mp3",
+    "viral_video.mp4",
+    "dank_meme.png",
+] {
+    bag.add_file::<AlgorithmToUse>(file).await.unwrap();
+}
+
+// Finalize bag, make it ready for distribution
+bag.finalize().await.unwrap();
+
+// The bag is ready: do whatever you want with it! Here are a few examples:
+// - Copy its contents over the network
+// - Burn it on a CD-ROM
+// - Put it in an archive
+
+# Ok(())
+# }
+```
+
+*/
 
 mod algorithm;
 mod checksum;
@@ -27,7 +105,9 @@ pub use payload::Payload;
 /// BagIt container: A set of opaque files contained within the structure defined by RFC 8493 <https://datatracker.ietf.org/doc/html/rfc8493>
 ///
 /// This struct represents valid and complete bags opened with [`BagIt::read_existing()`],
-/// or incomplete bags in the process of adding files (see [`BagIt::new_empty()`], [`BagIt::add_file()`]).
+/// or incomplete bags in the process of adding files.
+///
+/// See [`BagIt::new_empty()`] and [`BagIt::add_file()`].
 pub struct BagIt<'a, 'algo> {
     /// Location of the bag
     path: std::path::PathBuf,
