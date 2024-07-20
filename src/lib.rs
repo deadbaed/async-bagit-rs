@@ -4,7 +4,9 @@
 
 /*!
 
-# BagIt
+Rust library to create and read BagIt containers, with the [Tokio async runtime](https://docs.rs/tokio).
+
+# Learn about BagIt
 
 Here are some resources to get started with BagIt containers:
 

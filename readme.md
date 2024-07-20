@@ -1,5 +1,9 @@
 # async_bagit
 
+![CI status](https://github.com/deadbaed/async-bagit-rs/actions/workflows/rust.yml/badge.svg)
+[![crates.io version](https://img.shields.io/crates/v/async_bagit)](https://crates.io/crates/async_bagit)
+[![docs.rs](https://img.shields.io/docsrs/async_bagit)](https://docs.rs/async_bagit)
+
 Rust library to create and read [BagIt](https://en.wikipedia.org/wiki/BagIt) containers.
 
 ## Requirements to use in your crate
