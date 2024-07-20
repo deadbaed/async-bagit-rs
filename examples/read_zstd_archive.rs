@@ -34,7 +34,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let archive_decoder = ZstdDecoder::new(archive_reader);
 
     // Untar archive
-    Archive::new(archive_decoder).unpack(&temp_directory).await?;
+    Archive::new(archive_decoder)
+        .unpack(&temp_directory)
+        .await?;
 
     // Algorithm to use for checksums
     let algorithm = ChecksumAlgorithm::<Sha256>::new(Algorithm::Sha256);
