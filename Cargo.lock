@@ -44,16 +44,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-tempfile"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acb90d9834a8015109afc79f1f548223a0614edcbab62fb35b62d4b707e975e7"
+dependencies = [
+ "tokio",
+]
+
+[[package]]
 name = "async_bagit"
 version = "0.1.0"
 dependencies = [
  "async-compression",
+ "async-tempfile",
  "blake3",
  "digest",
  "hex",
  "md-5",
  "sha2",
- "tempfile",
  "thiserror",
  "tokio",
  "tokio-tar",
@@ -177,12 +186,6 @@ dependencies = [
  "libc",
  "windows-sys",
 ]
-
-[[package]]
-name = "fastrand"
-version = "2.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fc0510504f03c51ada170672ac806f1f105a88aa97a5281117e1ddc3368e51a"
 
 [[package]]
 name = "filetime"
@@ -394,18 +397,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
-]
-
-[[package]]
-name = "tempfile"
-version = "3.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "85b77fafb263dd9d05cbeac119526425676db3784113aa9295c88498cbf8bff1"
-dependencies = [
- "cfg-if",
- "fastrand",
- "rustix",
- "windows-sys",
 ]
 
 [[package]]

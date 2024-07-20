@@ -22,11 +22,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("CLI argument representing path to archive contaning bag");
 
     // Where to put the bag
-    let temp_directory = tempfile::Builder::new()
-        .suffix("bag-in-archive")
-        .tempdir()
-        .unwrap();
-    let temp_directory = temp_directory.path();
+    let temp_directory = async_tempfile::TempDir::new().await.unwrap();
+    let temp_directory = temp_directory.to_path_buf();
 
     // Open archive
     println!("Reading archive `{}`", archive_path);
@@ -37,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let archive_decoder = ZstdDecoder::new(archive_reader);
 
     // Untar archive
-    Archive::new(archive_decoder).unpack(temp_directory).await?;
+    Archive::new(archive_decoder).unpack(&temp_directory).await?;
 
     // Algorithm to use for checksums
     let algorithm = ChecksumAlgorithm::<Sha256>::new(Algorithm::Sha256);

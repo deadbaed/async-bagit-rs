@@ -121,15 +121,12 @@ mod test {
 
     #[tokio::test]
     async fn basic_bag_sha256() {
-        let temp_directory = tempfile::Builder::new()
-            .suffix("my-awesome-bag")
-            .tempdir()
-            .unwrap();
-        let temp_directory = temp_directory.path();
+        let temp_directory = async_tempfile::TempDir::new().await.unwrap();
+        let temp_directory = temp_directory.to_path_buf();
 
         let algo = ChecksumAlgorithm::<Sha256>::new(Algorithm::Sha256);
 
-        let mut bag = BagIt::new_empty(temp_directory, &algo);
+        let mut bag = BagIt::new_empty(&temp_directory, &algo);
 
         let mut source_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         source_directory.push("tests/sample-bag/data");

@@ -21,7 +21,7 @@ hex = "0.4"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 sha2 = "0.10"
 md-5 = "0.10"
-tempfile = "3"
+async-tempfile = "0.6"
 blake3 = { version = "1", features = ["traits-preview"] }
 tokio-tar = "0.3" # lookout for https://github.com/dignifiedquire/async-tar/pull/41
 async-compression = { version = "0.4", features = ["tokio", "zstdmt"] }
