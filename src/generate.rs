@@ -16,14 +16,17 @@ pub enum GenerateError {
     #[error("File has no name! This should not be possible")]
     FileHasNoName,
     /// Failed to create directory on filesystem
-    #[error("Failed to create payload directory")]
+    #[error("Failed to create payload directory: {0}")]
     OpenChecksumFile(std::io::ErrorKind),
     /// Failed to read file and/or create file on filesystem
-    #[error("Failed to copy file to payload directory")]
+    #[error("Failed to copy file to payload directory: {0}")]
     CopyToPayloadFolder(std::io::ErrorKind),
     /// Failed to compute relative path of newly copied payload
     #[error("Failed to get relative path of file inside bag: {0}")]
     StripPrefixPath(#[from] std::path::StripPrefixError),
+    /// Failed to finalize bag: usually IO
+    #[error("Failed to finalize bag: {0}")]
+    Finalize(std::io::ErrorKind),
 }
 
 impl<'algo> super::BagIt<'_, 'algo> {
@@ -85,21 +88,29 @@ impl<'algo> super::BagIt<'_, 'algo> {
     ///
     /// - Write manifest file with payloads and their checksums
     /// - Bagit file declaration
-    pub async fn finalize(&self) -> Result<(), std::io::Error> {
-        self.write_manifest_file().await?;
-        self.write_bagit_file().await?;
+    /// - Information file about bag
+    /// - Manifest with checksums of files that are not data payload
+    pub async fn finalize<ChecksumAlgo: Digest>(&self) -> Result<(), GenerateError> {
+        self.write_manifest_file(self.manifest_name(), self.payload_items())
+            .await
+            .map_err(|e| GenerateError::Finalize(e.kind()))?;
+        self.write_bagit_file()
+            .await
+            .map_err(|e| GenerateError::Finalize(e.kind()))?;
+        self.write_tagmanifest_file::<ChecksumAlgo>().await?;
 
         Ok(())
     }
 
-    async fn write_manifest_file(&self) -> Result<(), std::io::Error> {
-        let manifest_name = format!("manifest-{}.txt", self.checksum_algorithm);
-        let manifest_path = self.path.join(manifest_name);
+    async fn write_manifest_file(
+        &self,
+        filename: String,
+        payloads: impl Iterator<Item = impl ToString>,
+    ) -> Result<(), std::io::Error> {
+        let manifest_path = self.path.join(filename);
 
-        let contents = self
-            .items
-            .iter()
-            .map(Payload::to_string)
+        let contents = payloads
+            .map(|payload| payload.to_string())
             .collect::<Vec<_>>()
             .join("\n");
 
@@ -111,6 +122,32 @@ impl<'algo> super::BagIt<'_, 'algo> {
         let contents = "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n";
 
         fs::write(manifest_path, contents).await
+    }
+
+    async fn write_tagmanifest_file<ChecksumAlgo: Digest>(&self) -> Result<(), GenerateError> {
+        // Files for tag manifest
+        let items = ["bagit.txt".into(), self.manifest_name()];
+
+        // Compute their checksums
+        let checksums_items = futures::future::join_all(
+            items
+                .iter()
+                .map(|file| compute_checksum_file::<ChecksumAlgo>(self.path().join(file))),
+        )
+        .await
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+
+        // Create payloads
+        let payloads = items
+            .iter()
+            .zip(checksums_items)
+            .map(|(path, checksum)| Payload::new(path, checksum));
+
+        // Write like manifest file
+        self.write_manifest_file(self.tagmanifest_name(), payloads)
+            .await
+            .map_err(|e| GenerateError::Finalize(e.kind()))
     }
 }
 
@@ -156,7 +193,7 @@ mod test {
         assert!(!bagit_file.is_file());
 
         // Finalize bag
-        assert!(bag.finalize().await.is_ok());
+        assert_eq!(bag.finalize::<Sha256>().await, Ok(()));
 
         // Make sure files have been created
         assert!(manifest_file.is_file());
