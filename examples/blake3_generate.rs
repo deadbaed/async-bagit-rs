@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Finalize bag
-    bag.finalize().await?;
+    bag.finalize::<Blake3>().await?;
 
     println!("Your new bag is available at `{}`", bag_directory);
 

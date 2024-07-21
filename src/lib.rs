@@ -70,7 +70,7 @@ for file in [
 }
 
 // Finalize bag, make it ready for distribution
-bag.finalize().await.unwrap();
+bag.finalize::<AlgorithmToUse>().await.unwrap();
 
 // The bag is ready: do whatever you want with it! Here are a few examples:
 // - Copy its contents over the network
@@ -186,6 +186,14 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
     pub fn payload_items(&self) -> impl Iterator<Item = &Payload> {
         self.items.iter()
     }
+
+    fn manifest_name(&self) -> String {
+        format!("manifest-{}.txt", self.checksum_algorithm)
+    }
+
+    fn tagmanifest_name(&self) -> String {
+        format!("tagmanifest-{}.txt", self.checksum_algorithm)
+    }
 }
 
 #[cfg(test)]
@@ -223,7 +231,7 @@ mod test {
             }
 
             // Finalize bag
-            bag.finalize().await.unwrap();
+            assert_eq!(bag.finalize::<Sha256>().await, Ok(()));
         }
 
         // Start from a blank slate to open the bag
