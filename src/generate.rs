@@ -192,11 +192,17 @@ mod test {
         let bagit_file = temp_directory.join("bagit.txt");
         assert!(!bagit_file.is_file());
 
+        // Tag manifest file
+        let tag_manifest_name = format!("tagmanifest-{}.txt", algo.algorithm());
+        let tag_manifest_file = temp_directory.join(tag_manifest_name);
+        assert!(!tag_manifest_file.is_file());
+
         // Finalize bag
         assert_eq!(bag.finalize::<Sha256>().await, Ok(()));
 
         // Make sure files have been created
         assert!(manifest_file.is_file());
         assert!(bagit_file.is_file());
+        assert!(tag_manifest_file.is_file());
     }
 }
