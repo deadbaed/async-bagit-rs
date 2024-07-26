@@ -14,8 +14,11 @@ pub enum PayloadError {
     /// Each line of manifest must be: "\<payload checksum\> \<relative path of payload\>"
     #[error("Invalid line format")]
     InvalidLine,
+    /// This might happen when manifest contains wrongly formatted paths
+    #[error("Failed to get absolute path")]
+    Absolute(std::io::ErrorKind),
     /// Path of payload must be relative to container's path
-    #[error("Item is not inside bag")]
+    #[error("Payload is not inside bag")]
     NotInsideBag,
     /// See [`ChecksumComputeError`]
     #[error("Failed to compute checksum: {0}")]
@@ -50,19 +53,32 @@ impl<'a> Payload<'a> {
 
     pub(crate) async fn from_manifest<'manifest, 'item, ChecksumAlgo: Digest>(
         manifest_line: &'manifest str,
-        base_directory: &Path,
+        base_directory: impl AsRef<Path>,
     ) -> Result<Self, PayloadError> {
+        let base_directory = base_directory.as_ref();
+
         // TODO: wait for https://github.com/rust-lang/rust/issues/98326 to stabilize
         let [checksum_from_manifest, relative_file_path] = manifest_line
             .split_whitespace()
             .next_chunk()
             .map_err(|_| PayloadError::InvalidLine)?;
 
-        if !relative_file_path.starts_with("data/") {
+        // Absolute path of payload
+        let file_path = base_directory
+            .join(relative_file_path)
+            .canonicalize()
+            .map_err(|e| PayloadError::Absolute(e.kind()))?;
+
+        // Get absolute path of base directory, in case there are some unresolved symlinks
+        let base_directory = base_directory
+            .canonicalize()
+            .map_err(|e| PayloadError::Absolute(e.kind()))?;
+
+        // Make sure payload is inside bag, prevent path traversal attacks
+        if !file_path.starts_with(base_directory) {
             return Err(PayloadError::NotInsideBag);
         }
 
-        let file_path = base_directory.join(relative_file_path);
         let checksum = compute_checksum_file::<ChecksumAlgo>(&file_path).await?;
 
         if checksum != checksum_from_manifest.into() {
