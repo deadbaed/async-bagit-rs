@@ -22,3 +22,11 @@ jobs:
           components: clippy, rustfmt
       - run: cargo clippy --all-targets --all-features
       - run: cargo fmt --check
+
+  examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: cargo run --example read_zstd_archive -- ./tests/sample-bag.tar.zst
+      - run: cargo run --example blake3_generate --features="generate" -- ${{ runner.temp }}/test_bag
