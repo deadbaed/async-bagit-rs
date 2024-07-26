@@ -1,9 +1,9 @@
 use crate::error::PayloadError;
-use crate::{BagIt, ChecksumAlgorithm, Payload};
+use crate::manifest::Manifest;
+use crate::{BagIt, ChecksumAlgorithm};
 use digest::Digest;
 use std::path::Path;
 use tokio::fs;
-use tokio::io::{AsyncBufReadExt, BufReader};
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 /// Possible errors when reading a bagit container
@@ -17,9 +17,6 @@ pub enum ReadError {
     /// Failed to gather list of potential checksum files
     #[error("Listing checksum files")]
     ListChecksumFiles(std::io::ErrorKind),
-    /// At least a checksum file is required for bag it be complete
-    #[error("Missing at least a checksum file")]
-    MissingChecksumFiles,
     /// The algorithm asked is not present in the bag
     #[error("Requested algorithm is missing")]
     NotRequestedAlgorithm,
@@ -71,80 +68,35 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         let mut dir = fs::read_dir(bag_it_directory.as_ref())
             .await
             .map_err(|e| ReadError::ListChecksumFiles(e.kind()))?;
-
-        let mut checksum_files = Vec::new();
-
+        let mut files_in_dir = Vec::new();
         while let Some(entry) = dir
             .next_entry()
             .await
             .map_err(|e| ReadError::ListChecksumFiles(e.kind()))?
         {
             let path = entry.path();
-
-            if
-            // Item is a regular file
-            path.is_file()
-            // And
-                &&
-            // Filename starts with "manifest-"
-            path
-                .file_stem()
-                .and_then(|filename| filename.to_str())
-                .map(|filename| filename.starts_with("manifest-"))
-                .is_some_and(|does_filename_match| does_filename_match)
-            // And
-                &&
-            // File has ".txt" extension
-            path.extension().and_then(|ext| ext.to_str()) == Some("txt")
-            {
-                checksum_files.push(path);
-            }
+            files_in_dir.push(path);
         }
 
-        if checksum_files.is_empty() {
-            return Err(ReadError::MissingChecksumFiles);
-        }
+        // Get and validate payloads from manifest of requested checksum algorithm
+        let payloads = Manifest::find_manifest(files_in_dir.as_ref(), checksum_algorithm)
+            .await?
+            .ok_or(ReadError::NotRequestedAlgorithm)?
+            .get_validate_payloads::<ChecksumAlgo>(bag_it_directory.as_ref())
+            .await?;
 
-        // Get file of requested checksum
-        let checksum_file = checksum_files
-            .into_iter()
-            .find(|path| {
-                path.file_stem()
-                    .and_then(|file| file.to_str())
-                    .and_then(|name| name.strip_prefix("manifest-"))
-                    == Some(checksum_algorithm.name())
-            })
-            .ok_or(ReadError::NotRequestedAlgorithm)?;
-        let checksum_file = fs::File::open(checksum_file)
-            .await
-            .map_err(|e| ReadError::OpenChecksumFile(e.kind()))?;
-        let mut checksum_file = BufReader::new(checksum_file);
-
-        let mut items = Vec::new();
-
-        loop {
-            let mut checksum_line = String::new();
-            let read_bytes = checksum_file
-                .read_line(&mut checksum_line)
-                .await
-                .map_err(|e| ReadError::ReadChecksumLine(e.kind()))?;
-
-            // EOF
-            if read_bytes == 0 {
-                break;
-            }
-
-            let manifest_item =
-                Payload::from_manifest::<ChecksumAlgo>(&checksum_line, bag_it_directory.as_ref())
-                    .await
-                    .map_err(ReadError::ProcessManifestLine)?;
-
-            items.push(manifest_item);
+        // Optional if present: validate checksums from tag manifest
+        if let Some(tag_manifest) =
+            Manifest::find_tag_manifest(files_in_dir.as_ref(), checksum_algorithm).await?
+        {
+            tag_manifest
+                .get_validate_payloads::<ChecksumAlgo>(bag_it_directory.as_ref())
+                .await?;
         }
 
         Ok(BagIt {
             path: bag_it_directory.as_ref().to_path_buf(),
-            items,
+            items: payloads,
             checksum_algorithm: checksum_algorithm.algorithm(),
         })
     }

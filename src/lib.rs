@@ -87,6 +87,7 @@ mod algorithm;
 mod checksum;
 #[cfg(feature = "generate")]
 mod generate;
+mod manifest;
 mod payload;
 mod read;
 
