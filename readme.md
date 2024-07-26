@@ -37,7 +37,6 @@ When creating bags, the crate **will copy files** when adding them to the bag. M
 
 ## TODO
 
-- [ ] `tagmanifest-algorithm.txt`: The infrastructure is already there, just do it
 - [ ] `bag-info.txt` with common labels
 - [ ] `bagit.txt`: Don't hardcode it lol
 - [ ] `fetch.txt`: I do not have any use for this yet, and seems a bunch of work to implement it
