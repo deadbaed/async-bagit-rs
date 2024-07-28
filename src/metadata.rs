@@ -9,7 +9,7 @@ const KEY_DATE: &str = "Bagging-Date";
 const KEY_OXUM: &str = "Payload-Oxum";
 
 #[derive(Debug, PartialEq)]
-enum Metadata<'a> {
+pub enum Metadata<'a> {
     Custom {
         key: Cow<'a, str>,
         value: Cow<'a, str>,
@@ -63,7 +63,7 @@ impl Display for Metadata<'_> {
 }
 
 #[derive(thiserror::Error, Debug, PartialEq)]
-enum MetadataError {
+pub enum MetadataError {
     /// Metadata format must be: "<key>: <value>"
     #[error("Invalid format")]
     Format,

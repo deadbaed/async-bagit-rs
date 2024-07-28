@@ -1,5 +1,6 @@
 use crate::{
     checksum::{compute_checksum_file, ChecksumComputeError},
+    metadata::Metadata,
     ChecksumAlgorithm, Payload,
 };
 use digest::Digest;
@@ -119,7 +120,13 @@ impl<'algo> super::BagIt<'_, 'algo> {
 
     async fn write_bagit_file(&self) -> Result<(), std::io::Error> {
         let manifest_path = self.path.join("bagit.txt");
-        let contents = "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n";
+
+        let contents = [
+            Metadata::BagitVersion { major: 1, minor: 0 },
+            Metadata::Encoding,
+        ]
+        .map(|tag| tag.to_string())
+        .join("\n");
 
         fs::write(manifest_path, contents).await
     }

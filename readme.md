@@ -42,7 +42,6 @@ When creating bags, the crate **will copy files** when adding them to the bag. M
 ## TODO
 
 - [ ] `bag-info.txt` with common labels
-- [ ] `bagit.txt`: Don't hardcode it lol
 - [ ] `fetch.txt`: I do not have any use for this yet, and seems a bunch of work to implement it
 - [ ] Support multiple checksum algorithms at the same time
 - [ ] Respect the spec regarding filename casing
