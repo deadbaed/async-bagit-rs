@@ -62,6 +62,7 @@ dependencies = [
  "digest",
  "futures",
  "hex",
+ "jiff",
  "md-5",
  "sha2",
  "thiserror",
@@ -322,6 +323,12 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "jiff"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52113e019082508e868f92202f6e55c690c69990b17c350db01813cdf1dc1b19"
 
 [[package]]
 name = "jobserver"
