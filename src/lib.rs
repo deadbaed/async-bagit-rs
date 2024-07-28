@@ -90,6 +90,7 @@ mod generate;
 mod manifest;
 mod payload;
 mod read;
+mod metadata;
 
 /// Possible errors when manipulating BagIt containers
 pub mod error {
