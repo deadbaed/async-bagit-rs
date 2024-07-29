@@ -175,6 +175,7 @@ impl<'a> Metadata<'a> {
 #[cfg(test)]
 mod test {
     use super::{Metadata, MetadataError};
+    #[cfg(feature = "date")]
     use jiff::civil::Date;
     use std::str::FromStr;
 

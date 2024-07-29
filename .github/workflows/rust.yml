@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
-      - run: cargo build --no-default-features
+      - run: cargo test --no-default-features
       - run: cargo build --examples --all-features
       - run: cargo test --all-features
 
@@ -30,4 +30,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - run: cargo run --example read_zstd_archive -- ./tests/sample-bag.tar.zst
-      - run: cargo run --example blake3_generate --features="generate" -- ${{ runner.temp }}/test_bag
+      - run: cargo run --example blake3_generate -- ${{ runner.temp }}/test_bag

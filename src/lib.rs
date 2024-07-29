@@ -85,7 +85,6 @@ bag.finalize::<AlgorithmToUse>().await.unwrap();
 
 mod algorithm;
 mod checksum;
-#[cfg(feature = "generate")]
 mod generate;
 mod manifest;
 mod metadata;
@@ -95,7 +94,6 @@ mod read;
 /// Possible errors when manipulating BagIt containers
 pub mod error {
     pub use crate::checksum::ChecksumComputeError;
-    #[cfg(feature = "generate")]
     pub use crate::generate::GenerateError;
     pub use crate::payload::PayloadError;
     pub use crate::read::ReadError;
@@ -205,7 +203,6 @@ mod test {
     use std::path::Path;
 
     #[tokio::test]
-    #[cfg(feature = "generate")]
     async fn generate_and_read_basic_bag_sha256() {
         let temp_directory = async_tempfile::TempDir::new().await.unwrap();
         let temp_directory = temp_directory.to_path_buf();
