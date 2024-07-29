@@ -77,7 +77,7 @@ impl Manifest {
     ) -> Result<Vec<Payload<'static>>, ReadError> {
         let checksum_file = fs::File::open(self)
             .await
-            .map_err(|e| ReadError::OpenChecksumFile(e.kind()))?;
+            .map_err(|e| ReadError::OpenFile(e.kind()))?;
         let mut checksum_file = BufReader::new(checksum_file);
 
         let mut items = Vec::new();
@@ -87,7 +87,7 @@ impl Manifest {
             let read_bytes = checksum_file
                 .read_line(&mut checksum_line)
                 .await
-                .map_err(|e| ReadError::ReadChecksumLine(e.kind()))?;
+                .map_err(|e| ReadError::ReadLine(e.kind()))?;
 
             // EOF
             if read_bytes == 0 {

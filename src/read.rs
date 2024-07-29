@@ -1,8 +1,10 @@
 use crate::error::PayloadError;
 use crate::manifest::Manifest;
+use crate::metadata::{Metadata, KEY_ENCODING, KEY_VERSION};
 use crate::{BagIt, ChecksumAlgorithm};
 use digest::Digest;
 use std::path::Path;
+use std::str::FromStr;
 use tokio::fs;
 
 #[derive(thiserror::Error, Debug, PartialEq)]
@@ -14,18 +16,24 @@ pub enum ReadError {
     /// Required metadata file is not present
     #[error("Missing `bagit.txt` file")]
     MissingBagItTxt,
+    /// Got wrong tag inside `bagit.txt`
+    #[error("Wrong bad declaration `bagit.txt` file on key {0}")]
+    BagDeclarationKey(&'static str),
+    /// Wrongly formatted `bagit.txt`
+    #[error("Wrong number of lines for `bagit.txt` file")]
+    BagDeclarationLines,
     /// Failed to gather list of potential checksum files
     #[error("Listing checksum files")]
     ListChecksumFiles(std::io::ErrorKind),
     /// The algorithm asked is not present in the bag
     #[error("Requested algorithm is missing")]
     NotRequestedAlgorithm,
-    /// Failed to open file containing checksums
-    #[error("Failed to open checksum file")]
-    OpenChecksumFile(std::io::ErrorKind),
-    /// Failed to read one line containing checksum
-    #[error("Failed to read a line in checksum file")]
-    ReadChecksumLine(std::io::ErrorKind),
+    /// Failed to open file
+    #[error("Failed to open file")]
+    OpenFile(std::io::ErrorKind),
+    /// Failed to read one line
+    #[error("Failed to read a line in file")]
+    ReadLine(std::io::ErrorKind),
     /// See [`PayloadError`]
     #[error("Failed to process a line in checksum file: {0}")]
     ProcessManifestLine(#[from] PayloadError),
@@ -59,12 +67,40 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
             return Err(ReadError::NotDirectory);
         }
 
+        // Read `bagit.txt`
         let path_bagit = bag_it_directory.as_ref().join("bagit.txt");
         if !path_bagit.exists() {
             return Err(ReadError::MissingBagItTxt);
         }
-        // TODO: parse bagit.txt
 
+        // Read whole file (it is supposed to be 2 small lines)
+        let bagit_file = fs::read_to_string(path_bagit)
+            .await
+            .map_err(|e| ReadError::OpenFile(e.kind()))?;
+
+        let mut bagit_file = bagit_file
+            .lines()
+            // Attempt to parse metadata tags, keep only successful ones
+            .filter_map(|line| Metadata::from_str(line).ok());
+
+        // Expecting first tag to be BagIt version
+        match bagit_file.next() {
+            Some(Metadata::BagitVersion { .. }) => (),
+            _ => return Err(ReadError::BagDeclarationKey(KEY_VERSION)),
+        }
+
+        // Expecting second tag to be Encoding (utf-8)
+        match bagit_file.next() {
+            Some(Metadata::Encoding) => (),
+            _ => return Err(ReadError::BagDeclarationKey(KEY_ENCODING)),
+        }
+
+        // Expecting no more tags
+        if bagit_file.next().is_some() {
+            return Err(ReadError::BagDeclarationLines);
+        }
+
+        // Get all files in directory
         let mut dir = fs::read_dir(bag_it_directory.as_ref())
             .await
             .map_err(|e| ReadError::ListChecksumFiles(e.kind()))?;

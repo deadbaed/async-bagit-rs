@@ -3,10 +3,10 @@ use jiff::civil::Date;
 
 use std::{borrow::Cow, fmt::Display, str::FromStr};
 
-const KEY_VERSION: &str = "BagIt-Version";
-const KEY_ENCODING: &str = "Tag-File-Character-Encoding";
-const KEY_DATE: &str = "Bagging-Date";
-const KEY_OXUM: &str = "Payload-Oxum";
+pub const KEY_VERSION: &str = "BagIt-Version";
+pub const KEY_ENCODING: &str = "Tag-File-Character-Encoding";
+pub const KEY_DATE: &str = "Bagging-Date";
+pub const KEY_OXUM: &str = "Payload-Oxum";
 
 #[derive(Debug, PartialEq)]
 pub enum Metadata<'a> {
