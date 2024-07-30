@@ -5,6 +5,7 @@ use std::{borrow::Cow, fmt::Display, str::FromStr};
 
 pub const KEY_VERSION: &str = "BagIt-Version";
 pub const KEY_ENCODING: &str = "Tag-File-Character-Encoding";
+#[cfg(feature = "date")]
 pub const KEY_DATE: &str = "Bagging-Date";
 pub const KEY_OXUM: &str = "Payload-Oxum";
 

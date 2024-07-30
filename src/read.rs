@@ -141,10 +141,9 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
 #[cfg(test)]
 mod test {
 
-    use crate::{error::ReadError, Algorithm, BagIt, Checksum, ChecksumAlgorithm, Payload};
+    use crate::{error::ReadError, Algorithm, BagIt, ChecksumAlgorithm, Payload};
     use md5::Md5;
     use sha2::Sha256;
-    use std::path::Path;
 
     #[tokio::test]
     async fn basic_bag_sha256() {
@@ -158,35 +157,30 @@ mod test {
         let expected = BagIt::from_existing_items(
             bagit_directory,
             vec![
-                Payload::new(
-                    Path::new("data/bagit.md"),
-                    Checksum::from(
-                        "eccdbbade12ba878af8f2140cb00c914f427405a987de2670e5c3014faf59f8e",
-                    ),
+                Payload::test_payload(
+                    "data/bagit.md",
+                    "eccdbbade12ba878af8f2140cb00c914f427405a987de2670e5c3014faf59f8e",
+                    6302,
                 ),
-                Payload::new(
-                    Path::new("data/paper_bag.jpg"),
-                    Checksum::from(
-                        "2b22a8fd0dc46cbdc7a67b6cf588a03a8dd6f8ea23ce0b02e921ca5d79930bb2",
-                    ),
+                Payload::test_payload(
+                    "data/paper_bag.jpg",
+                    "2b22a8fd0dc46cbdc7a67b6cf588a03a8dd6f8ea23ce0b02e921ca5d79930bb2",
+                    19895,
                 ),
-                Payload::new(
-                    Path::new("data/rfc8493.txt"),
-                    Checksum::from(
-                        "4964147d2e6e16442d4a6dbfbe68178a8f33c3e791c06d68a8b33f51ad821537",
-                    ),
+                Payload::test_payload(
+                    "data/rfc8493.txt",
+                    "4964147d2e6e16442d4a6dbfbe68178a8f33c3e791c06d68a8b33f51ad821537",
+                    48783,
                 ),
-                Payload::new(
-                    Path::new("data/sources.csv"),
-                    Checksum::from(
-                        "0fe3bd6e7c36aa2c979f3330037b220c5ca88ed0eabf16622202dc0b33c44e72",
-                    ),
+                Payload::test_payload(
+                    "data/sources.csv",
+                    "0fe3bd6e7c36aa2c979f3330037b220c5ca88ed0eabf16622202dc0b33c44e72",
+                    369,
                 ),
-                Payload::new(
-                    Path::new("data/totebag.jpg"),
-                    Checksum::from(
-                        "38ff57167d746859f6383e80eb84ec0dd84de2ab1ed126ad317e73fbf502fb31",
-                    ),
+                Payload::test_payload(
+                    "data/totebag.jpg",
+                    "38ff57167d746859f6383e80eb84ec0dd84de2ab1ed126ad317e73fbf502fb31",
+                    10417,
                 ),
             ],
             algo.algorithm(),

@@ -1,7 +1,8 @@
 use crate::{
     checksum::{compute_checksum_file, ChecksumComputeError},
     metadata::Metadata,
-    ChecksumAlgorithm, Payload,
+    payload::{Payload, PayloadError},
+    ChecksumAlgorithm,
 };
 use digest::Digest;
 use std::path::Path;
@@ -28,6 +29,9 @@ pub enum GenerateError {
     /// Failed to finalize bag: usually IO
     #[error("Failed to finalize bag: {0}")]
     Finalize(std::io::ErrorKind),
+    /// Payload related error
+    #[error(transparent)]
+    Payload(#[from] PayloadError),
 }
 
 impl<'algo> super::BagIt<'_, 'algo> {
@@ -77,10 +81,10 @@ impl<'algo> super::BagIt<'_, 'algo> {
             .await
             .map_err(|e| GenerateError::CopyToPayloadFolder(e.kind()))?;
 
-        let relative_path = destination.strip_prefix(&self.path)?.to_path_buf();
+        let relative_path = destination.strip_prefix(self.path())?.to_path_buf();
 
         // Add to list of items in bag
-        self.items.push(Payload::new(relative_path, file_checksum));
+        self.items.push(Payload::new(self.path(), relative_path, file_checksum)?);
 
         Ok(())
     }
@@ -149,7 +153,7 @@ impl<'algo> super::BagIt<'_, 'algo> {
         let payloads = items
             .iter()
             .zip(checksums_items)
-            .map(|(path, checksum)| Payload::new(path, checksum));
+            .filter_map(|(path, checksum)| Payload::new(self.path(), path, checksum).ok());
 
         // Write like manifest file
         self.write_manifest_file(self.tagmanifest_name(), payloads)
