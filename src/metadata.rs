@@ -1,7 +1,8 @@
 #[cfg(feature = "date")]
 use jiff::civil::Date;
 
-use std::{borrow::Cow, fmt::Display, str::FromStr};
+pub use file::{MetadataFile, MetadataFileError};
+use std::{fmt::Display, str::FromStr};
 
 pub const KEY_VERSION: &str = "BagIt-Version";
 pub const KEY_ENCODING: &str = "Tag-File-Character-Encoding";
@@ -10,10 +11,10 @@ pub const KEY_DATE: &str = "Bagging-Date";
 pub const KEY_OXUM: &str = "Payload-Oxum";
 
 #[derive(Debug, PartialEq)]
-pub enum Metadata<'a> {
+pub enum Metadata {
     Custom {
-        key: Cow<'a, str>,
-        value: Cow<'a, str>,
+        key: String,
+        value: String,
     },
     BagitVersion {
         major: u8,
@@ -22,15 +23,16 @@ pub enum Metadata<'a> {
     Encoding,
     #[cfg(feature = "date")]
     BaggingDate(Date),
+    /// OctetStream sum (Oxum)
     PayloadOctetStreamSummary {
         /// Count of bytes in all streams
-        octet_count: usize,
+        octet_count: u64,
         /// Number of streams (aka files)
         stream_count: usize,
     },
 }
 
-impl Metadata<'_> {
+impl Metadata {
     pub fn key(&self) -> &str {
         match self {
             Metadata::Custom { key, .. } => key,
@@ -57,7 +59,7 @@ impl Metadata<'_> {
     }
 }
 
-impl Display for Metadata<'_> {
+impl Display for Metadata {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.key(), self.value())
     }
@@ -82,7 +84,7 @@ pub enum MetadataError {
     Encoding,
 }
 
-impl FromStr for Metadata<'_> {
+impl FromStr for Metadata {
     type Err = MetadataError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -137,14 +139,14 @@ impl FromStr for Metadata<'_> {
                 }
             }
             (_, _) => Metadata::Custom {
-                key: Cow::Owned(key.to_string()),
-                value: Cow::Owned(value.to_string()),
+                key: key.to_string(),
+                value: value.to_string(),
             },
         })
     }
 }
 
-impl Metadata<'_> {
+impl Metadata {
     fn validate_format(key: &str, value: &str) -> Result<(), MetadataError> {
         if key.is_empty() || value.is_empty() {
             return Err(MetadataError::Format);
@@ -162,14 +164,13 @@ impl Metadata<'_> {
     }
 }
 
-impl<'a> Metadata<'a> {
-    pub fn custom(key: &'a str, value: &'a str) -> Result<Self, MetadataError> {
-        Self::validate_format(key, value)?;
+impl Metadata {
+    pub fn custom(key: impl Into<String>, value: impl Into<String>) -> Result<Self, MetadataError> {
+        let key = key.into();
+        let value = value.into();
+        Self::validate_format(&key, &value)?;
 
-        Ok(Self::Custom {
-            key: Cow::Borrowed(key),
-            value: Cow::Borrowed(value),
-        })
+        Ok(Self::Custom { key, value })
     }
 }
 

@@ -151,4 +151,8 @@ impl<'a> Payload<'a> {
     pub fn absolute_path(&self, bag: &BagIt) -> PathBuf {
         bag.path().join(&self.relative_path)
     }
+
+    pub fn bytes(&self) -> u64 {
+        self.bytes
+    }
 }
