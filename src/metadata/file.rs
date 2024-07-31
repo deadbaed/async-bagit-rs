@@ -56,4 +56,8 @@ impl MetadataFile {
     pub fn tags(&self) -> impl Iterator<Item = &Metadata> {
         self.0.iter()
     }
+
+    pub fn consume_tags(self) -> impl IntoIterator<Item = Metadata> {
+        self.0.into_iter()
+    }
 }

@@ -49,6 +49,7 @@ impl<'algo> super::BagIt<'_, 'algo> {
             path: directory.as_ref().to_path_buf(),
             checksum_algorithm: checksum_algorithm.algorithm(),
             items: vec![],
+            tags: vec![],
         }
     }
 

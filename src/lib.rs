@@ -101,6 +101,7 @@ pub mod error {
 
 pub use algorithm::{Algorithm, ChecksumAlgorithm};
 pub use checksum::Checksum;
+use metadata::Metadata;
 pub use payload::Payload;
 
 #[derive(Debug, PartialEq)]
@@ -119,6 +120,9 @@ pub struct BagIt<'a, 'algo> {
 
     /// Which algorithm to use for checksums of the items
     checksum_algorithm: &'algo Algorithm,
+
+    /// Metadata tags
+    tags: Vec<Metadata>,
 }
 
 impl<'a, 'algo> BagIt<'a, 'algo> {
@@ -127,11 +131,13 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         directory: impl AsRef<std::path::Path>,
         items: Vec<Payload<'a>>,
         checksum_algorithm: &'algo Algorithm,
+        tags: Vec<Metadata>,
     ) -> Result<Self, error::ReadError> {
         Ok(Self {
             path: directory.as_ref().to_path_buf(),
             items,
             checksum_algorithm,
+            tags,
         })
     }
 
@@ -266,6 +272,7 @@ mod test {
                     ),
                 ],
                 algo.algorithm(),
+                vec![],
             )
             .unwrap();
 

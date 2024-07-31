@@ -144,7 +144,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
             .await?;
 
         // Optional if present: validate number of payload files and total file size
-        if let Some(bag_info) = bag_info {
+        if let Some(ref bag_info) = bag_info {
             for tag in bag_info.tags() {
                 if let Metadata::PayloadOctetStreamSummary {
                     octet_count,
@@ -174,10 +174,16 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
                 .await?;
         }
 
+        // Get tags from bag info
+        let tags = bag_info
+            .map(|file| file.consume_tags().into_iter().collect())
+            .unwrap_or_default();
+
         Ok(BagIt {
             path: bag_it_directory.as_ref().to_path_buf(),
             items: payloads,
             checksum_algorithm: checksum_algorithm.algorithm(),
+            tags,
         })
     }
 }
@@ -185,7 +191,10 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
 #[cfg(test)]
 mod test {
 
-    use crate::{error::ReadError, Algorithm, BagIt, ChecksumAlgorithm, Payload};
+    use crate::{
+        error::ReadError, metadata::Metadata, Algorithm, BagIt, ChecksumAlgorithm, Payload,
+    };
+    use jiff::civil::Date;
     use md5::Md5;
     use sha2::Sha256;
 
@@ -228,6 +237,13 @@ mod test {
                 ),
             ],
             algo.algorithm(),
+            vec![
+                Metadata::BaggingDate(Date::new(2024, 7, 11).unwrap()),
+                Metadata::PayloadOctetStreamSummary {
+                    octet_count: 85766,
+                    stream_count: 5,
+                },
+            ],
         )
         .unwrap();
 

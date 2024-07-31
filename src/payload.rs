@@ -152,6 +152,7 @@ impl<'a> Payload<'a> {
         bag.path().join(&self.relative_path)
     }
 
+    /// Size of payload in bytes
     pub fn bytes(&self) -> u64 {
         self.bytes
     }
