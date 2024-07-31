@@ -9,11 +9,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com).
 ### Added
 
 - Support for tag manifests
+- Added `Metadata` struct, read/write tags from/to file bag-data.txt
+- Storing metadata tags inside `BagIt` struct
+- Store file size in `Payload` struct
+
+Supporting reading and writing commonly used tags through `Metadata` struct:
+- `BagIt-Version`
+- `Tag-File-Character-Encoding`
+- `Bagging-Date` (with [`jiff`](http://docs.rs/jiff) crate)
+- `Payload-Oxum`
+- Custom tags with key/value stored as strings
 
 ### Changed
 
 - Write a tag manifest when creating a bag
 - Validate tag manifest if present when reading a bag
+- Using new `Metadata` struct for reading and writing bagit.txt file
 
 ### Fixed
 

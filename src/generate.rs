@@ -1,6 +1,8 @@
 use crate::{
     checksum::{compute_checksum_file, ChecksumComputeError},
-    ChecksumAlgorithm, Payload,
+    metadata::{Metadata, MetadataFile},
+    payload::{Payload, PayloadError},
+    ChecksumAlgorithm,
 };
 use digest::Digest;
 use std::path::Path;
@@ -27,6 +29,9 @@ pub enum GenerateError {
     /// Failed to finalize bag: usually IO
     #[error("Failed to finalize bag: {0}")]
     Finalize(std::io::ErrorKind),
+    /// Payload related error
+    #[error(transparent)]
+    Payload(#[from] PayloadError),
 }
 
 impl<'algo> super::BagIt<'_, 'algo> {
@@ -44,6 +49,7 @@ impl<'algo> super::BagIt<'_, 'algo> {
             path: directory.as_ref().to_path_buf(),
             checksum_algorithm: checksum_algorithm.algorithm(),
             items: vec![],
+            tags: vec![],
         }
     }
 
@@ -76,12 +82,18 @@ impl<'algo> super::BagIt<'_, 'algo> {
             .await
             .map_err(|e| GenerateError::CopyToPayloadFolder(e.kind()))?;
 
-        let relative_path = destination.strip_prefix(&self.path)?.to_path_buf();
+        let relative_path = destination.strip_prefix(self.path())?.to_path_buf();
 
         // Add to list of items in bag
-        self.items.push(Payload::new(relative_path, file_checksum));
+        self.items
+            .push(Payload::new(self.path(), relative_path, file_checksum)?);
 
         Ok(())
+    }
+
+    #[cfg(feature = "date")]
+    pub fn add_bagging_date(&mut self, date: jiff::civil::Date) {
+        self.tags.push(Metadata::BaggingDate(date));
     }
 
     /// Procedure to make a bagit container ready for distribution
@@ -90,13 +102,30 @@ impl<'algo> super::BagIt<'_, 'algo> {
     /// - Bagit file declaration
     /// - Information file about bag
     /// - Manifest with checksums of files that are not data payload
-    pub async fn finalize<ChecksumAlgo: Digest>(&self) -> Result<(), GenerateError> {
+    pub async fn finalize<ChecksumAlgo: Digest>(&mut self) -> Result<(), GenerateError> {
         self.write_manifest_file(self.manifest_name(), self.payload_items())
             .await
             .map_err(|e| GenerateError::Finalize(e.kind()))?;
-        self.write_bagit_file()
+
+        // Write `bagit.txt`
+        let mut bagit_file = MetadataFile::default();
+        bagit_file.add(Metadata::BagitVersion { major: 1, minor: 0 });
+        bagit_file.add(Metadata::Encoding);
+        bagit_file
+            .write(self.path.join("bagit.txt"))
             .await
             .map_err(|e| GenerateError::Finalize(e.kind()))?;
+
+        // Write `bag-info.txt`
+        self.tags.push(Metadata::PayloadOctetStreamSummary {
+            stream_count: self.payload_items().count(),
+            octet_count: self.payload_items().map(|payload| payload.bytes()).sum(),
+        });
+        MetadataFile::from(self.tags.clone())
+            .write(self.path.join("bag-info.txt"))
+            .await
+            .map_err(|e| GenerateError::Finalize(e.kind()))?;
+
         self.write_tagmanifest_file::<ChecksumAlgo>().await?;
 
         Ok(())
@@ -117,16 +146,13 @@ impl<'algo> super::BagIt<'_, 'algo> {
         fs::write(manifest_path, contents).await
     }
 
-    async fn write_bagit_file(&self) -> Result<(), std::io::Error> {
-        let manifest_path = self.path.join("bagit.txt");
-        let contents = "BagIt-Version: 1.0\nTag-File-Character-Encoding: UTF-8\n";
-
-        fs::write(manifest_path, contents).await
-    }
-
     async fn write_tagmanifest_file<ChecksumAlgo: Digest>(&self) -> Result<(), GenerateError> {
         // Files for tag manifest
-        let items = ["bagit.txt".into(), self.manifest_name()];
+        let items = [
+            "bagit.txt".into(),
+            "bag-info.txt".into(),
+            self.manifest_name(),
+        ];
 
         // Compute their checksums
         let checksums_items = futures::future::join_all(
@@ -142,7 +168,7 @@ impl<'algo> super::BagIt<'_, 'algo> {
         let payloads = items
             .iter()
             .zip(checksums_items)
-            .map(|(path, checksum)| Payload::new(path, checksum));
+            .filter_map(|(path, checksum)| Payload::new(self.path(), path, checksum).ok());
 
         // Write like manifest file
         self.write_manifest_file(self.tagmanifest_name(), payloads)
@@ -154,10 +180,12 @@ impl<'algo> super::BagIt<'_, 'algo> {
 #[cfg(test)]
 mod test {
     use crate::{Algorithm, BagIt, ChecksumAlgorithm};
+    #[cfg(feature = "date")]
+    use jiff::civil::Date;
     use sha2::Sha256;
 
     #[tokio::test]
-    async fn basic_bag_sha256() {
+    async fn bag_sha256() {
         let temp_directory = async_tempfile::TempDir::new().await.unwrap();
         let temp_directory = temp_directory.to_path_buf();
 
@@ -192,6 +220,10 @@ mod test {
         let bagit_file = temp_directory.join("bagit.txt");
         assert!(!bagit_file.is_file());
 
+        // Bag info file
+        let bag_info_file = temp_directory.join("bag-info.txt");
+        assert!(!bag_info_file.is_file());
+
         // Tag manifest file
         let tag_manifest_name = format!("tagmanifest-{}.txt", algo.algorithm());
         let tag_manifest_file = temp_directory.join(tag_manifest_name);
@@ -203,6 +235,52 @@ mod test {
         // Make sure files have been created
         assert!(manifest_file.is_file());
         assert!(bagit_file.is_file());
+        assert!(bag_info_file.is_file());
         assert!(tag_manifest_file.is_file());
+    }
+
+    #[tokio::test]
+    #[cfg(feature = "date")]
+    async fn bag_with_date() {
+        use crate::metadata::Metadata;
+
+        let temp_directory = async_tempfile::TempDir::new().await.unwrap();
+        let temp_directory = temp_directory.to_path_buf();
+
+        let algo = ChecksumAlgorithm::<Sha256>::new(Algorithm::Sha256);
+
+        let mut bag = BagIt::new_empty(&temp_directory, &algo);
+
+        let mut source_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        source_directory.push("tests/sample-bag/data");
+
+        // Add files to the bag
+        let temp_payload_destination = temp_directory.join("data");
+        for file in ["paper_bag.jpg"] {
+            bag.add_file::<Sha256>(source_directory.join(file))
+                .await
+                .unwrap();
+            assert!(temp_payload_destination.join(file).is_file());
+        }
+
+        bag.add_bagging_date(Date::new(2024, 8, 1).unwrap());
+
+        // Finalize bag
+        assert_eq!(bag.finalize::<Sha256>().await, Ok(()));
+
+        // Read bag, make sure date is present
+        let read_bag = BagIt::read_existing::<Sha256>(temp_directory, &algo)
+            .await
+            .unwrap();
+        assert_eq!(
+            read_bag.tags,
+            vec![
+                Metadata::BaggingDate(Date::new(2024, 8, 1).unwrap()),
+                Metadata::PayloadOctetStreamSummary {
+                    octet_count: 19895,
+                    stream_count: 1
+                }
+            ]
+        );
     }
 }

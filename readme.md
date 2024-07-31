@@ -9,7 +9,11 @@ Rust library to create and read [BagIt](https://en.wikipedia.org/wiki/BagIt) con
 ## Requirements to use in your crate
 
 - Tokio runtime
-- Nightly Rust, until [feature `iter_next_chunk`](https://github.com/rust-lang/rust/issues/98326) is stabilized, sorry. Feel free to propose a patch to have something working on stable in the mean time!
+- Nightly Rust until features shown in table below are stabilized, sorry. Feel free to propose a patch to have something working on stable in the meantime!
+
+| Nightly feature | Tracking issue |
+| --- | --- |
+| `iter_next_chunk` | [#98326](https://github.com/rust-lang/rust/issues/98326) |
 
 ## Notes when using the crate
 
@@ -37,8 +41,6 @@ When creating bags, the crate **will copy files** when adding them to the bag. M
 
 ## TODO
 
-- [ ] `bag-info.txt` with common labels
-- [ ] `bagit.txt`: Don't hardcode it lol
 - [ ] `fetch.txt`: I do not have any use for this yet, and seems a bunch of work to implement it
 - [ ] Support multiple checksum algorithms at the same time
 - [ ] Respect the spec regarding filename casing

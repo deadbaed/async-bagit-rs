@@ -77,27 +77,20 @@ impl Manifest {
     ) -> Result<Vec<Payload<'static>>, ReadError> {
         let checksum_file = fs::File::open(self)
             .await
-            .map_err(|e| ReadError::OpenChecksumFile(e.kind()))?;
-        let mut checksum_file = BufReader::new(checksum_file);
+            .map_err(|e| ReadError::OpenFile(e.kind()))?;
+        let checksum_file = BufReader::new(checksum_file);
+        let mut checksum_lines = checksum_file.lines();
 
         let mut items = Vec::new();
 
-        loop {
-            let mut checksum_line = String::new();
-            let read_bytes = checksum_file
-                .read_line(&mut checksum_line)
+        while let Some(line) = checksum_lines
+            .next_line()
+            .await
+            .map_err(|e| ReadError::ReadLine(e.kind()))?
+        {
+            let manifest_item = Payload::from_manifest::<ChecksumAlgo>(&line, &bag_it_directory)
                 .await
-                .map_err(|e| ReadError::ReadChecksumLine(e.kind()))?;
-
-            // EOF
-            if read_bytes == 0 {
-                break;
-            }
-
-            let manifest_item =
-                Payload::from_manifest::<ChecksumAlgo>(&checksum_line, &bag_it_directory)
-                    .await
-                    .map_err(ReadError::ProcessManifestLine)?;
+                .map_err(ReadError::ProcessManifestLine)?;
 
             items.push(manifest_item);
         }

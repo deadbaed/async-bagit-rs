@@ -8,8 +8,8 @@ description = "Create and load BagIt containers"
 repository = "https://github.com/deadbaed/async-bagit-rs"
 
 [features]
-default = ["generate"]
-generate = []
+default = ["date"]
+date = ["dep:jiff"]
 
 [dependencies]
 thiserror = "1"
@@ -17,6 +17,7 @@ tokio = { version = "1", features = ["fs", "rt", "io-util"] }
 digest = "0.10"
 hex = "0.4"
 futures = "0.3"
+jiff = { version = "0.1", optional = true, default-features = false, features = ["std"] }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
@@ -29,7 +30,6 @@ async-compression = { version = "0.4", features = ["tokio", "zstdmt"] }
 
 [[example]]
 name = "blake3_generate"
-required-features = ["generate"]
 
 [[example]]
 name = "read_zstd_archive"

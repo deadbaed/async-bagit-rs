@@ -26,6 +26,9 @@ pub enum PayloadError {
     /// Checksum is not the same after computing it and comparing with the one provided in the bag
     #[error("Provided checksum differs from file on disk")]
     ChecksumDiffers,
+    /// Used for metadata tag `Oxum`
+    #[error("Failed to get file size: {0}")]
+    FileSize(std::io::ErrorKind),
 }
 
 #[derive(Debug, PartialEq)]
@@ -35,6 +38,9 @@ pub struct Payload<'a> {
 
     /// Path relative to the bag directory
     relative_path: std::path::PathBuf,
+
+    /// File size in bytes
+    bytes: u64,
 }
 
 impl Display for Payload<'_> {
@@ -44,11 +50,40 @@ impl Display for Payload<'_> {
 }
 
 impl<'a> Payload<'a> {
-    pub(crate) fn new(relative_path_file: impl AsRef<Path>, checksum: Checksum<'a>) -> Self {
+    #[cfg(test)]
+    pub(crate) fn test_payload(
+        relative_path_file: impl AsRef<Path>,
+        checksum: &'a str,
+        bytes: u64,
+    ) -> Self {
         Self {
-            checksum,
-            relative_path: relative_path_file.as_ref().to_path_buf(),
+            checksum: Checksum::from(checksum),
+            relative_path: PathBuf::from(relative_path_file.as_ref()),
+            bytes,
         }
+    }
+
+    pub(crate) fn new(
+        absolute_base_path: impl AsRef<Path>,
+        relative_path_file: impl AsRef<Path>,
+        checksum: Checksum<'a>,
+    ) -> Result<Self, PayloadError> {
+        let relative_path = relative_path_file.as_ref().to_path_buf();
+
+        // Get absolute path
+        let bytes = absolute_base_path
+            .as_ref()
+            .join(relative_path_file.as_ref())
+            // Get file metadata
+            .metadata()
+            .map(|metadata| metadata.len())
+            .map_err(|e| PayloadError::FileSize(e.kind()))?;
+
+        Ok(Self {
+            checksum,
+            relative_path,
+            bytes,
+        })
     }
 
     pub(crate) async fn from_manifest<'manifest, 'item, ChecksumAlgo: Digest>(
@@ -85,9 +120,16 @@ impl<'a> Payload<'a> {
             return Err(PayloadError::ChecksumDiffers);
         }
 
+        // File size
+        let bytes = file_path
+            .metadata()
+            .map(|metadata| metadata.len())
+            .map_err(|e| PayloadError::FileSize(e.kind()))?;
+
         Ok(Self {
             checksum,
             relative_path: PathBuf::from(relative_file_path),
+            bytes,
         })
     }
 
@@ -108,5 +150,10 @@ impl<'a> Payload<'a> {
     /// Absolute path of payload
     pub fn absolute_path(&self, bag: &BagIt) -> PathBuf {
         bag.path().join(&self.relative_path)
+    }
+
+    /// Size of payload in bytes
+    pub fn bytes(&self) -> u64 {
+        self.bytes
     }
 }
