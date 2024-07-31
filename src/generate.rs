@@ -1,6 +1,6 @@
 use crate::{
     checksum::{compute_checksum_file, ChecksumComputeError},
-    metadata::Metadata,
+    metadata::{Metadata, MetadataFile},
     payload::{Payload, PayloadError},
     ChecksumAlgorithm,
 };
@@ -100,9 +100,16 @@ impl<'algo> super::BagIt<'_, 'algo> {
         self.write_manifest_file(self.manifest_name(), self.payload_items())
             .await
             .map_err(|e| GenerateError::Finalize(e.kind()))?;
-        self.write_bagit_file()
+
+        // Write `bagit.txt`
+        let mut bagit_file = MetadataFile::default();
+        bagit_file.add(Metadata::BagitVersion { major: 1, minor: 0 });
+        bagit_file.add(Metadata::Encoding);
+        bagit_file
+            .write(self.path.join("bagit.txt"))
             .await
             .map_err(|e| GenerateError::Finalize(e.kind()))?;
+
         self.write_tagmanifest_file::<ChecksumAlgo>().await?;
 
         Ok(())
@@ -119,19 +126,6 @@ impl<'algo> super::BagIt<'_, 'algo> {
             .map(|payload| payload.to_string())
             .collect::<Vec<_>>()
             .join("\n");
-
-        fs::write(manifest_path, contents).await
-    }
-
-    async fn write_bagit_file(&self) -> Result<(), std::io::Error> {
-        let manifest_path = self.path.join("bagit.txt");
-
-        let contents = [
-            Metadata::BagitVersion { major: 1, minor: 0 },
-            Metadata::Encoding,
-        ]
-        .map(|tag| tag.to_string())
-        .join("\n");
 
         fs::write(manifest_path, contents).await
     }
