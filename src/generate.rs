@@ -84,7 +84,8 @@ impl<'algo> super::BagIt<'_, 'algo> {
         let relative_path = destination.strip_prefix(self.path())?.to_path_buf();
 
         // Add to list of items in bag
-        self.items.push(Payload::new(self.path(), relative_path, file_checksum)?);
+        self.items
+            .push(Payload::new(self.path(), relative_path, file_checksum)?);
 
         Ok(())
     }
