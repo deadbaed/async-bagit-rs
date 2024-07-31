@@ -35,6 +35,9 @@ pub enum ReadError {
     /// Error related to `bag-info.txt`
     #[error("Bag info `bag-info.txt`: {0}")]
     BagInfo(#[from] MetadataFileError),
+    /// Error related to `bag-info.txt`
+    #[error("Bag info incorrect Oxum: {0}")]
+    BagInfoOxum(&'static str),
     /// Failed to gather list of potential checksum files
     #[error("Listing checksum files")]
     ListChecksumFiles(std::io::ErrorKind),
@@ -149,12 +152,14 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
                 } = tag
                 {
                     if *stream_count != payloads.len() {
-                        // TODO: error
+                        // Expected number of payloads does not match
+                        return Err(ReadError::BagInfoOxum("stream_count"));
                     }
 
                     let payload_bytes_sum = payloads.iter().map(|payload| payload.bytes()).sum();
                     if *octet_count != payload_bytes_sum {
-                        // TODO: error
+                        // Expected total bytes does not match
+                        return Err(ReadError::BagInfoOxum("octet_count"));
                     }
                 }
             }
