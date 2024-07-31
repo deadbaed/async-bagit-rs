@@ -61,3 +61,9 @@ impl MetadataFile {
         self.0.into_iter()
     }
 }
+
+impl From<Vec<Metadata>> for MetadataFile {
+    fn from(value: Vec<Metadata>) -> Self {
+        Self(value)
+    }
+}

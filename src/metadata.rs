@@ -12,7 +12,7 @@ pub const KEY_ENCODING: &str = "Tag-File-Character-Encoding";
 pub const KEY_DATE: &str = "Bagging-Date";
 pub const KEY_OXUM: &str = "Payload-Oxum";
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Metadata {
     Custom {
         key: String,

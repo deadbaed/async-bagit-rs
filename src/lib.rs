@@ -204,7 +204,7 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
 
 #[cfg(test)]
 mod test {
-    use crate::{Algorithm, BagIt, ChecksumAlgorithm, Payload};
+    use crate::{metadata::Metadata, Algorithm, BagIt, ChecksumAlgorithm, Payload};
     use sha2::Sha256;
 
     #[tokio::test]
@@ -272,7 +272,10 @@ mod test {
                     ),
                 ],
                 algo.algorithm(),
-                vec![],
+                vec![Metadata::PayloadOctetStreamSummary {
+                    octet_count: 85766,
+                    stream_count: 5,
+                }],
             )
             .unwrap();
 

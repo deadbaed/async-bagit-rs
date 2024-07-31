@@ -200,7 +200,7 @@ mod test {
     use sha2::Sha256;
 
     #[tokio::test]
-    async fn basic_bag_sha256() {
+    async fn bag_with_date_sha256() {
         let mut bagit_directory = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         bagit_directory.push("tests/sample-bag");
 
