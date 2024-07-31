@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com).
 
 ## Unreleased
 
+## 0.2.0 - 2024-08-01
+
 ### Added
 
 - Support for tag manifests

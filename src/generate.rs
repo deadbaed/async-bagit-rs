@@ -92,6 +92,7 @@ impl<'algo> super::BagIt<'_, 'algo> {
     }
 
     #[cfg(feature = "date")]
+    /// Add ISO formatted date representing date when bag was created
     pub fn add_bagging_date(&mut self, date: jiff::civil::Date) {
         self.tags.push(Metadata::BaggingDate(date));
     }
