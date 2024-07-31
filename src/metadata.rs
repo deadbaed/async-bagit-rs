@@ -1,3 +1,5 @@
+mod file;
+
 #[cfg(feature = "date")]
 use jiff::civil::Date;
 

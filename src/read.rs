@@ -1,11 +1,27 @@
 use crate::error::PayloadError;
 use crate::manifest::Manifest;
-use crate::metadata::{Metadata, KEY_ENCODING, KEY_VERSION};
+use crate::metadata::{Metadata, MetadataFile, MetadataFileError, KEY_ENCODING, KEY_VERSION};
 use crate::{BagIt, ChecksumAlgorithm};
 use digest::Digest;
 use std::path::Path;
-use std::str::FromStr;
 use tokio::fs;
+
+#[derive(thiserror::Error, Debug, PartialEq)]
+/// Possible errors when reading bag declaration file `bagit.txt`
+pub enum BagDeclarationError {
+    /// Required metadata file is not present
+    #[error("Missing `bagit.txt` file")]
+    Missing,
+    /// Error when parsing file
+    #[error(transparent)]
+    Metadata(#[from] MetadataFileError),
+    /// Got wrong tag
+    #[error("Wrong tag {0}")]
+    Tag(&'static str),
+    /// Wrongly formatted `bagit.txt`
+    #[error("Wrong number of tags for `bagit.txt` file")]
+    NumberTags,
+}
 
 #[derive(thiserror::Error, Debug, PartialEq)]
 /// Possible errors when reading a bagit container
@@ -13,15 +29,12 @@ pub enum ReadError {
     /// Specified path is not a directory
     #[error("Path is not a directory")]
     NotDirectory,
-    /// Required metadata file is not present
-    #[error("Missing `bagit.txt` file")]
-    MissingBagItTxt,
-    /// Got wrong tag inside `bagit.txt`
-    #[error("Wrong bad declaration `bagit.txt` file on key {0}")]
-    BagDeclarationKey(&'static str),
-    /// Wrongly formatted `bagit.txt`
-    #[error("Wrong number of lines for `bagit.txt` file")]
-    BagDeclarationLines,
+    /// Error related to `bagit.txt`
+    #[error("Bag declaration `bagit.txt`: {0}")]
+    BagDeclaration(#[from] BagDeclarationError),
+    /// Error related to `bag-info.txt`
+    #[error("Bag info `bag-info.txt`: {0}")]
+    BagInfo(#[from] MetadataFileError),
     /// Failed to gather list of potential checksum files
     #[error("Listing checksum files")]
     ListChecksumFiles(std::io::ErrorKind),
@@ -70,35 +83,41 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
         // Read `bagit.txt`
         let path_bagit = bag_it_directory.as_ref().join("bagit.txt");
         if !path_bagit.exists() {
-            return Err(ReadError::MissingBagItTxt);
+            return Err(ReadError::BagDeclaration(BagDeclarationError::Missing));
         }
-
-        // Read whole file (it is supposed to be 2 small lines)
-        let bagit_file = fs::read_to_string(path_bagit)
+        let bagit_file = MetadataFile::read(path_bagit)
             .await
-            .map_err(|e| ReadError::OpenFile(e.kind()))?;
-
-        let mut bagit_file = bagit_file
-            .lines()
-            // Attempt to parse metadata tags, keep only successful ones
-            .filter_map(|line| Metadata::from_str(line).ok());
+            .map_err(|e| ReadError::BagDeclaration(e.into()))?;
+        let mut bagit_file = bagit_file.tags();
 
         // Expecting first tag to be BagIt version
         match bagit_file.next() {
             Some(Metadata::BagitVersion { .. }) => (),
-            _ => return Err(ReadError::BagDeclarationKey(KEY_VERSION)),
+            _ => return Err(BagDeclarationError::Tag(KEY_VERSION).into()),
         }
 
         // Expecting second tag to be Encoding (utf-8)
         match bagit_file.next() {
             Some(Metadata::Encoding) => (),
-            _ => return Err(ReadError::BagDeclarationKey(KEY_ENCODING)),
+            _ => return Err(BagDeclarationError::Tag(KEY_ENCODING).into()),
         }
 
         // Expecting no more tags
         if bagit_file.next().is_some() {
-            return Err(ReadError::BagDeclarationLines);
+            return Err(BagDeclarationError::NumberTags.into());
         }
+
+        // Get optional `bag-info.txt`
+        let path_baginfo = bag_it_directory.as_ref().join("bag-info.txt");
+        let bag_info = if path_baginfo.exists() {
+            Some(
+                MetadataFile::read(path_baginfo)
+                    .await
+                    .map_err(ReadError::BagInfo)?,
+            )
+        } else {
+            None
+        };
 
         // Get all files in directory
         let mut dir = fs::read_dir(bag_it_directory.as_ref())
@@ -120,6 +139,26 @@ impl<'a, 'algo> BagIt<'a, 'algo> {
             .ok_or(ReadError::NotRequestedAlgorithm)?
             .get_validate_payloads::<ChecksumAlgo>(bag_it_directory.as_ref())
             .await?;
+
+        // Optional if present: validate number of payload files and total file size
+        if let Some(bag_info) = bag_info {
+            for tag in bag_info.tags() {
+                if let Metadata::PayloadOctetStreamSummary {
+                    octet_count,
+                    stream_count,
+                } = tag
+                {
+                    if *stream_count != payloads.len() {
+                        // TODO: error
+                    }
+
+                    let payload_bytes_sum = payloads.iter().map(|payload| payload.bytes()).sum();
+                    if *octet_count != payload_bytes_sum {
+                        // TODO: error
+                    }
+                }
+            }
+        }
 
         // Optional if present: validate checksums from tag manifest
         if let Some(tag_manifest) =
