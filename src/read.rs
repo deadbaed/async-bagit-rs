@@ -194,6 +194,7 @@ mod test {
     use crate::{
         error::ReadError, metadata::Metadata, Algorithm, BagIt, ChecksumAlgorithm, Payload,
     };
+    #[cfg(feature = "date")]
     use jiff::civil::Date;
     use md5::Md5;
     use sha2::Sha256;
@@ -238,7 +239,13 @@ mod test {
             ],
             algo.algorithm(),
             vec![
+                #[cfg(feature = "date")]
                 Metadata::BaggingDate(Date::new(2024, 7, 11).unwrap()),
+                #[cfg(not(feature = "date"))]
+                Metadata::Custom {
+                    key: "Bagging-Date".into(),
+                    value: "2024-07-11".into(),
+                },
                 Metadata::PayloadOctetStreamSummary {
                     octet_count: 85766,
                     stream_count: 5,
